@@ -1,0 +1,814 @@
+import pandas as pd
+import numpy as np
+from datetime import datetime
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("your_dataset.csv")  
+
+df.rename(columns={df.columns[3]: 'Date1', df.columns[4]: 'Date2'}, inplace=True)
+df['Date1'] = pd.to_datetime(df['Date1'], format="%Y/%d/%m")
+df['Date2'] = pd.to_datetime(df['Date2'], format="%Y/%d/%m")
+
+exclude_cols = ['Roll No', 'E-mail', 'Sl.No']
+cols_to_fill = [col for col in df.columns if col not in exclude_cols]
+
+for col in cols_to_fill:
+    df[col] = pd.to_numeric(df[col], errors='coerce')
+df[cols_to_fill] = df[cols_to_fill].fillna(df[cols_to_fill].median())
+
+df.rename(columns={df.columns[-1]: 'Total'}, inplace=True)
+
+df_part1 = df.iloc[:65]
+df_part2 = df.iloc[65:]
+
+min_val = df_part1['Total'].min()
+max_val = df_part1['Total'].max()
+part1_scaled = (df_part1['Total'] - min_val) / (max_val - min_val)
+
+mean = df_part2['Total'].mean()
+std = df_part2['Total'].std()
+part2_scaled = (df_part2['Total'] - mean) / std
+
+df_scaled = pd.concat([part1_scaled, part2_scaled])
+df['Total'] = df_scaled
+
+df['Percentage'] = ((df['Total'] - df['Total'].min()) / (df['Total'].max() - df['Total'].min())) * 100
+
+df.to_csv("Updated_Dataset_with_Percentage.csv", index=False)
+
+section_a = df.iloc[:65]
+section_b = df.iloc[65:]
+
+plt.figure(figsize=(12, 6))
+plt.bar(section_a['Roll No'], section_a['Percentage'], color='skyblue')
+plt.xlabel("Student")
+plt.ylabel("Percentage")
+plt.title("Section A: Student vs Percentage")
+plt.xticks(rotation=90)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(12, 6))
+plt.bar(section_b['Roll No'], section_b['Percentage'], color='orange')
+plt.xlabel("Student")
+plt.ylabel("Percentage")
+plt.title("Section B: Student vs Percentage")
+plt.xticks(rotation=90)
+plt.tight_layout()
+plt.show()
+
+————————————————
+
+DOB
+
+import pandas as pd
+from datetime import datetime
+
+# Read the CSV file
+data = pd.read_csv("person-details.csv")
+
+def calculate_age(dob):
+    try:
+        dob = pd.to_datetime(dob, dayfirst=True, errors='coerce')
+        today = datetime.today()
+        age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        return age
+    except:
+        return None
+
+data['Age'] = data['DOB'].apply(calculate_age)
+
+print(data)
+
+
+——————————————-
+Titanic preprocessing 
+
+import pandas as pd
+
+titanic_data = pd.read_csv("titanic.csv")
+
+titanic_data['Age'].fillna(titanic_data['Age'].median(), inplace=True)
+
+titanic_data['Embarked'].fillna(titanic_data['Embarked'].mode()[0], inplace=True)
+
+titanic_data.drop('Cabin', axis=1, inplace=True)
+
+titanic_data['Sex'] = titanic_data['Sex'].map({'male': 0, 'female': 1})
+titanic_data['Embarked'] = titanic_data['Embarked'].map({'C': 0, 'Q': 1, 'S': 2})
+
+fare_min = titanic_data['Fare'].min()
+fare_max = titanic_data['Fare'].max()
+titanic_data['Fare'] = (titanic_data['Fare'] - fare_min) / (fare_max - fare_min)
+
+titanic_data['FamilySize'] = titanic_data['SibSp'] + titanic_data['Parch']
+
+titanic_data.to_csv("titanic_cleaned.csv", index=False)
+
+print(titanic_data.head())
+
+---------------------------------
+
+******One-Sample T-Test*********
+
+from scipy.stats import ttest_1samp
+
+# Sample data
+scores = [86, 87, 88, 86, 87, 85, 90, 89]
+
+t_stat, p_val = ttest_1samp(scores, 85)
+
+print("One-Sample T-Test")
+print("T-Statistic:", t_stat)
+print("P-Value:", p_val)
+
+if p_val < 0.05:
+    print("Result: Mean is significantly different from 85.")
+else:
+    print("Result: No significant difference.")
+
+******Two-Sample T-Test (Unpaired / Independent)******
+
+from scipy.stats import ttest_ind
+
+group1 = [82, 85, 88, 90, 86]
+group2 = [75, 80, 78, 74, 76]
+
+# Unpaired T-test
+t_stat, p_val = ttest_ind(group1, group2)
+
+print("\nTwo-Sample T-Test (Unpaired)")
+print("T-Statistic:", t_stat)
+print("P-Value:", p_val)
+
+if p_val < 0.05:
+    print("Result: Significant difference between the two groups.")
+else:
+    print("Result: No significant difference.")
+
+**********Paired T-Test (Dependent)*********
+
+from scipy.stats import ttest_rel
+
+before = [72, 75, 78, 79, 80]
+after  = [74, 78, 79, 82, 85]
+
+# Paired T-test
+t_stat, p_val = ttest_rel(before, after)
+
+print("\nPaired T-Test")
+print("T-Statistic:", t_stat)
+print("P-Value:", p_val)
+
+if p_val < 0.05:
+    print("Result: Significant difference before and after.")
+else:
+    print("Result: No significant difference.")
+
+_______________________________________________________________
+6)
+
+**********Chi-Square Test of Independence********
+import pandas as pd
+from scipy.stats import chi2_contingency
+
+data = {'Tea': [30, 10], 'Coffee': [20, 40]}
+table = pd.DataFrame(data, index=['Male', 'Female'])
+
+chi2, p, dof, expected = chi2_contingency(table)
+
+print("Chi-Square Test of Independence")
+print("Chi2 Statistic:", chi2)
+print("P-value:", p)
+print("Degrees of Freedom:", dof)
+print("Expected Frequencies:\n", expected)
+
+if p < 0.05:
+    print("Result: Variables are dependent.")
+else:
+    print("Result: Variables are independent.")
+
+************Chi-Square Goodness of Fit**********
+
+from scipy.stats import chisquare
+
+# Observed frequencies (e.g., dice rolls)
+observed = [18, 22, 20, 19, 21, 20]
+expected = [20] * 6
+
+chi2_stat, p_val = chisquare(f_obs=observed, f_exp=expected)
+
+print("\nChi-Square Goodness of Fit Test")
+print("Chi2 Statistic:", chi2_stat)
+print("P-value:", p_val)
+
+if p_val < 0.05:
+    print("Result: Observed data does NOT fit expected distribution.")
+else:
+    print("Result: Data fits expected distribution.")
+___________________________________________________________________________
+7)
+***********One-Sample Z-Test**************
+
+import numpy as np
+from statsmodels.stats.weightstats import ztest
+
+data = [50, 52, 49, 48, 51, 50, 47, 53]
+population_mean = 50
+
+z_stat, p_val = ztest(data, value=population_mean)
+
+print("One-Sample Z-Test")
+print("Z-statistic:", z_stat)
+print("P-value:", p_val)
+
+if p_val < 0.05:
+    print("Result: Significant difference from population mean.")
+else:
+    print("Result: No significant difference.")
+
+********Two-Sample Z-Test*********
+
+group1 = [54, 55, 56, 58, 59]
+group2 = [50, 52, 51, 49, 48]
+
+z_stat, p_val = ztest(group1, group2)
+
+print("\nTwo-Sample Z-Test")
+print("Z-statistic:", z_stat)
+print("P-value:", p_val)
+
+if p_val < 0.05:
+    print("Result: Means are significantly different.")
+else:
+    print("Result: No significant difference in means.")
+
+___________________________________________________________________
+8)
+************One-Way ANOVA****************
+
+import pandas as pd
+from scipy.stats import f_oneway
+
+# Sample data for three groups
+group_A = [23, 25, 27, 24, 22]
+group_B = [30, 31, 29, 32, 28]
+group_C = [35, 34, 36, 33, 37]
+
+f_stat, p_val = f_oneway(group_A, group_B, group_C)
+
+print("One-Way ANOVA")
+print("F-Statistic:", f_stat)
+print("P-Value:", p_val)
+
+if p_val < 0.05:
+    print("Result: Significant difference between group means.")
+else:
+    print("Result: No significant difference.")
+
+************* Two-Way ANOVA****************
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+import pandas as pd
+
+# Sample DataFrame
+data = {
+    'Score': [85, 90, 88, 75, 78, 74, 92, 95, 93, 70, 68, 72],
+    'Gender': ['M', 'M', 'M', 'F', 'F', 'F', 'M', 'M', 'M', 'F', 'F', 'F'],
+    'Course': ['Math', 'Math', 'Math', 'Math', 'Math', 'Math',
+               'Bio', 'Bio', 'Bio', 'Bio', 'Bio', 'Bio']
+}
+df = pd.DataFrame(data)
+
+model = ols('Score ~ C(Gender) + C(Course) + C(Gender):C(Course)', data=df).fit()
+anova_table = sm.stats.anova_lm(model, typ=2)
+
+print("\nTwo-Way ANOVA")
+print(anova_table)
+
+
+------------------------------------------------------------------------------------
+
+9)
+***********mean vector,covariance,correlation******************
+import numpy as np
+import pandas as pd
+
+# Sample dataset
+data = {
+    'X1': [2, 4, 6, 8, 10],
+    'X2': [1, 3, 5, 7, 9],
+    'X3': [10, 20, 30, 40, 50]
+}
+
+df = pd.DataFrame(data)
+print("Original Dataset:\n", df)
+
+mean_vector = df.mean()
+print("\nMean Vector:\n", mean_vector)
+
+variance = df.var(ddof=1)  # Sample variance
+print("\nVariance:\n", variance)
+
+covariance_matrix = df.cov()
+print("\nCovariance Matrix:\n", covariance_matrix)
+
+correlation_matrix = df.corr()
+print("\nCorrelation Matrix:\n", correlation_matrix)
+
+-------------------------------------------------------------------
+
+# apriori
+#add few print statements
+
+import pandas as pd
+from mlxtend.frequent_patterns import apriori, association_rules
+
+df = pd.read_csv('market_basket.csv')
+
+df_items = df.drop('Transaction ID', axis=1)
+
+frequent_itemsets = apriori(df_items, min_support=0.3, use_colnames=True)
+
+rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.7)
+
+print("Frequent Itemsets:\n", frequent_itemsets)
+print("\nAssociation Rules:\n", rules[['antecedents', 'consequents', 'support', 'confidence', 'lift']])
+
+-------------------------------------------------------------------------------------
+
+#SVM
+
+import numpy as np
+
+X = np.array([[2, 3], [1, 1], [2, 1], [5, 4], [6, 5], [7, 8]])
+y = np.array([1, 1, 1, -1, -1, -1])  # Labels must be +1 or -1
+
+learning_rate = 0.001
+lambda_param = 0.01
+epochs = 1000
+
+n_features = X.shape[1]
+w = np.zeros(n_features)
+b = 0
+
+for epoch in range(epochs):
+    for i, x_i in enumerate(X):
+        condition = y[i] * (np.dot(w, x_i) + b) >= 1
+        if condition:
+            w -= learning_rate * (2 * lambda_param * w)
+        else:
+            w -= learning_rate * (2 * lambda_param * w - np.dot(x_i, y[i]))
+            b -= learning_rate * y[i]
+
+print("Weight vector:", w)
+print("Bias:", b)
+
+def predict(x):
+    return 1 if np.dot(w, x) + b >= 0 else -1
+
+x_new = np.array([3, 3])
+pred = predict(x_new)
+print("Prediction for", x_new, ":", "Class +1" if pred == 1 else "Class -1")
+
+
+----------------------------------------------------------------------------------
+
+# KNN
+
+import pandas as pd
+import numpy as np
+from collections import Counter
+from sklearn.model_selection import train_test_split
+
+df = pd.read_csv("your_dataset.csv")
+
+X = df.iloc[:, :-1].values  # all columns except last
+y = df.iloc[:, -1].values   # last column = label
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+def euclidean_distance(x1, x2):
+    return np.sqrt(np.sum((x1 - x2) ** 2))
+
+def knn_predict(X_train, y_train, x_input, k):
+    distances = []
+    for i in range(len(X_train)):
+        dist = euclidean_distance(x_input, X_train[i])
+        distances.append((dist, y_train[i]))
+    distances.sort(key=lambda x: x[0])
+    k_nearest_labels = [label for _, label in distances[:k]]
+    most_common = Counter(k_nearest_labels).most_common(1)
+    return most_common[0][0]
+
+# Prediction
+k = 3
+
+x_new = np.array([2.0, 1.5, 3.0])  # change as per your CSV features
+custom_pred = knn_predict(X_train, y_train, x_new, k)
+print("Prediction for", x_new, "is:", custom_pred)
+
+-----------------------------------------------------------------------------------
+# pca
+
+import numpy as np
+import pandas as pd
+
+data = pd.read_csv('pca1.csv')
+
+mean_vector = np.mean(data, axis=0)
+print("Mean Vector:\n", mean_vector)
+
+X = data - mean_vector
+cov_matrix = np.cov(X.T)
+print("\nCovariance Matrix:\n", cov_matrix)
+
+eig_vals, eig_vecs = np.linalg.eigh(cov_matrix)
+
+sorted_idx = np.argsort(eig_vals)[::-1]
+eig_vals = eig_vals[sorted_idx]
+eig_vecs = eig_vecs[:, sorted_idx]
+
+k = 2
+top_k_eig_vecs = eig_vecs[:, :k]
+
+X_pca = np.dot(X, top_k_eig_vecs)
+
+print("\nEigenvalues:\n", eig_vals)
+print("\nTop-k Eigenvectors:\n", top_k_eig_vecs)
+print("\nProjected Data (PCA result):\n", X_pca)
+
+
+---------------------------------------------------------------------------------------
+#smoothing
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def simple_exponential_smoothing(data, alpha):
+    smoothed = np.zeros(len(data))
+    smoothed[0] = data[0]
+
+    for t in range(1, len(data)):
+        smoothed[t] = alpha * data[t] + (1 - alpha) * smoothed[t - 1]
+
+    next_forecast = alpha * data[-1] + (1 - alpha) * smoothed[-1]
+    return smoothed, next_forecast
+
+def double_exponential_smoothing(data, alpha, beta):
+    smoothed = np.zeros(len(data) + 1)
+    trend = np.zeros(len(data) + 1)
+
+    smoothed[0] = data[0]
+    trend[0] = data[1] - data[0]
+
+    for t in range(1, len(data)):
+        smoothed[t] = alpha * data[t] + (1 - alpha) * (smoothed[t-1] + trend[t-1])
+        trend[t] = beta * (smoothed[t] - smoothed[t-1]) + (1 - beta) * trend[t-1]
+
+    smoothed[-1] = smoothed[-2] + trend[-2]
+    return smoothed[:-1], smoothed[-1]
+
+def holt_winters_exponential_smoothing(data, alpha, beta, gamma, season_length):
+    smoothed = np.zeros(len(data) + 1)
+    trend = np.zeros(len(data) + 1)
+    seasonal = np.ones(season_length)
+
+    smoothed[0] = data[0]
+    trend[0] = data[1] - data[0]
+
+    for i in range(season_length):
+        seasonal[i] = data[i] / smoothed[0]
+
+    for t in range(1, len(data)):
+        if t >= season_length:
+            seasonal[t % season_length] = gamma * (data[t] / smoothed[t - 1]) + (1 - gamma) * seasonal[t % season_length]
+        smoothed[t] = alpha * (data[t] / seasonal[t % season_length]) + (1 - alpha) * (smoothed[t - 1] + trend[t - 1])
+        trend[t] = beta * (smoothed[t] - smoothed[t - 1]) + (1 - beta) * trend[t - 1]
+
+    smoothed[-1] = (smoothed[-2] + trend[-2]) * seasonal[-1 % season_length]
+    return smoothed[:-1], smoothed[-1]
+
+smoothing_type = input("Enter smoothing type (simple/double/triple): ").strip().lower()
+dataset_path = input("Enter dataset file path: ").strip()
+
+data_df = pd.read_csv(dataset_path)
+months = data_df['month']
+sales = data_df['sales'].values
+
+if(smoothing_type == "simple"):
+   alpha = 0.3
+elif(smoothing_type == "double"):
+   alpha = 0.3
+   beta = 0.2
+elif(smoothing_type == "triple"):
+   alpha = 0.5
+   beta = 0.5
+   gamma = 0.5
+   season_length = 4
+
+if smoothing_type == "simple":
+    smoothed_sales, next_month_prediction = simple_exponential_smoothing(sales, alpha)
+elif smoothing_type == "double":
+    smoothed_sales, next_month_prediction = double_exponential_smoothing(sales, alpha, beta)
+elif smoothing_type == "triple":
+    smoothed_sales, next_month_prediction = holt_winters_exponential_smoothing(sales, alpha, beta, gamma, season_length)
+else:
+    raise ValueError("Invalid smoothing type! Choose from 'simple', 'double', or 'triple'.")
+
+print(f"{smoothing_type.capitalize()} Exponential Smoothed Data:", smoothed_sales)
+print("Predicted Sales for Next Month (Nov):", next_month_prediction)
+
+plt.figure(figsize=(10,5))
+plt.plot(months, sales, label='Original Data', marker='o')
+plt.plot(months, smoothed_sales, label=f'{smoothing_type.capitalize()} Exponential Smoothing', linestyle='--', marker='s')
+plt.xlabel('Month')
+plt.ylabel('Sales')
+plt.title(f'{smoothing_type.capitalize()} Exponential Smoothing')
+plt.legend()
+plt.xticks(rotation=45)
+
+future_months = np.append(months, 'Nov')
+future_sales = np.append(smoothed_sales, next_month_prediction)
+plt.plot(future_months, future_sales, label='Forecast (Nov)', linestyle='dotted', marker='^', color='red')
+
+plt.show()
+
+-------------------------------------------------------------------------
+
+#decision tree
+
+
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.metrics import accuracy_score, r2_score
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import LabelEncoder
+
+data= pd.read_csv('/content/Soybean.csv')
+
+label_encoder = LabelEncoder()
+data['Class'] = label_encoder.fit_transform(data['Class'])
+
+data = data.dropna()
+
+model = LinearRegression()
+
+r2_scores = {}
+
+for column in data.columns:
+    if column != 'Class':
+        X = data[[column]].values
+        y = data['Class']
+
+        model.fit(X, y)
+        r2 = r2_score(y, model.predict(X))
+        r2_scores[column] = r2
+
+sorted_r2 = sorted(r2_scores.items(), key=lambda item: item[1])
+least_r2_columns = [column for column, _ in sorted_r2[:16]]
+print("Columns with the least R² values (to be removed):")
+print(least_r2_columns)
+
+data_cleaned = data.drop(columns=least_r2_columns)
+
+print("\nRemaining columns after removal:")
+print(data_cleaned.columns)
+
+
+X = data_cleaned.drop(columns=['Class'])
+y = data_cleaned ['Class']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+dt_classifier = DecisionTreeClassifier(criterion='entropy', random_state=42)
+dt_classifier.fit(X_train, y_train)
+class_names = [str(cls) for cls in label_encoder.classes_]
+
+new_records = pd.DataFrame([
+    [0, 2, 1, 0, 1, 2, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 2, 0],
+    [1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+    [0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+    [1, 2, 0, 1, 0, 2, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 2, 1],
+    [0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0]
+], columns=X.columns)
+
+new_predictions = dt_classifier.predict(new_records)
+predicted_class_names = label_encoder.inverse_transform(new_predictions)
+print("Predictions for the new records:", predicted_class_names)
+
+new_records['Class'] = new_predictions
+data_updated = pd.concat([data_cleaned, new_records], ignore_index=True)
+
+X_updated = data_updated.drop(columns=['Class'])
+y_updated = data_updated['Class']
+dt_classifier.fit(X_updated, y_updated)
+
+plt.figure(figsize=(100, 100))
+plot_tree(dt_classifier,
+          filled=True,
+          feature_names=X_updated.columns,
+          class_names=label_encoder.classes_,
+          rounded=True)
+
+plt.tight_layout()
+plt.show()
+print ("Accuracy : ", accuracy_score(y_test, y_pred))
+
+--------------------------------------------------------------------
+
+14)
+**************Gaussian Naive Bayes (using Iris dataset)*******************
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import classification_report
+
+iris = load_iris()
+X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target, test_size=0.3, random_state=42)
+
+# Gaussian Naive Bayes
+gnb = GaussianNB()
+gnb.fit(X_train, y_train)
+y_pred = gnb.predict(X_test)
+
+print("=== Gaussian Naive Bayes ===")
+print(classification_report(y_test, y_pred))
+
+***************Multinomial Naive Bayes (using text data)*******************
+
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import make_pipeline
+
+# Sample text data
+texts = ['I love programming', 'Python is great', 'I hate bugs', 'Debugging is hard', 'I love Python']
+labels = [1, 1, 0, 0, 1]  # 1: Positive, 0: Negative
+
+# Multinomial Naive Bayes Pipeline
+model = make_pipeline(CountVectorizer(), MultinomialNB())
+model.fit(texts, labels)
+
+preds = model.predict(['I love debugging', 'Bugs are annoying'])
+print("\n=== Multinomial Naive Bayes ===")
+print("Predictions:", preds)
+
+****************Bernoulli Naive Bayes (binary features)***********************
+from sklearn.naive_bayes import BernoulliNB
+import numpy as np
+
+X = np.array([
+    [1, 0, 1, 0],
+    [1, 1, 0, 1],
+    [0, 1, 1, 0],
+    [0, 0, 0, 1]
+])
+y = [1, 1, 0, 0]  # Labels
+
+# Bernoulli Naive Bayes
+bnb = BernoulliNB()
+bnb.fit(X, y)
+y_pred = bnb.predict([[1, 0, 0, 1]])
+print("\n=== Bernoulli Naive Bayes ===")
+print("Prediction:", y_pred)
+______________________________________________________________________________________________
+
+***************Decision and random forest****************************
+
+import pandas as pd
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+
+# Load dataset
+iris = load_iris()
+X = iris.data
+y = iris.target
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+dt_model = DecisionTreeClassifier(criterion='gini', random_state=42)  # You can also use 'entropy'
+dt_model.fit(X_train, y_train)
+y_pred_dt = dt_model.predict(X_test)
+
+print("=== Decision Tree Classifier ===")
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred_dt))
+print("Classification Report:\n", classification_report(y_test, y_pred_dt))
+
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+y_pred_rf = rf_model.predict(X_test)
+
+print("=== Random Forest Classifier ===")
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred_rf))
+print("Classification Report:\n", classification_report(y_test, y_pred_rf))
+
+________________________________________________________________________________________________________
+
+*****************Binary Logistic Regression (2 classes)***************************
+
+from sklearn.datasets import load_breast_cancer
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.preprocessing import StandardScaler
+
+data = load_breast_cancer()
+X = data.data
+y = data.target  # Binary: 0 = malignant, 1 = benign
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+model_bin = LogisticRegression()
+model_bin.fit(X_train, y_train)
+y_pred_bin = model_bin.predict(X_test)
+
+print("=== Binary Logistic Regression ===")
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred_bin))
+print("Classification Report:\n", classification_report(y_test, y_pred_bin))
+
+******************Multinomial Logistic Regression (more than 2 classes)**************************
+
+from sklearn.datasets import load_iris
+
+iris = load_iris()
+X = iris.data
+y = iris.target  # Multiclass: 0, 1, 2
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+model_multi = LogisticRegression(multi_class='multinomial', solver='lbfgs', max_iter=200)
+model_multi.fit(X_train, y_train)
+y_pred_multi = model_multi.predict(X_test)
+
+print("\n=== Multinomial Logistic Regression ===")
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred_multi))
+print("Classification Report:\n", classification_report(y_test, y_pred_multi))
+__________________________________________________________________________________________________________
+
+********************Auto Regressive & Moving Average Models********************
+import pandas as pd
+import matplotlib.pyplot as plt
+from statsmodels.tsa.ar_model import AutoReg
+from statsmodels.tsa.arima.model import ARIMA
+
+# Sample time series data (monthly sales or similar)
+data = [266, 145, 183, 119, 180, 168, 232, 197, 151, 199, 134, 158,
+        210, 180, 234, 267, 160, 170, 219, 263, 192, 118, 190, 221]
+
+df = pd.DataFrame(data, columns=['Value'])
+
+# Plot the data
+df.plot(title="Time Series Data", figsize=(8, 4))
+plt.show()
+
+# AR model
+ar_model = AutoReg(df['Value'], lags=1).fit()
+ar_forecast = ar_model.predict(start=len(df), end=len(df)+5)
+
+print("AutoRegressive Forecast:")
+print(ar_forecast)
+
+# MA model using ARIMA (AR=0, I=0, MA=1)
+ma_model = ARIMA(df['Value'], order=(0, 0, 1)).fit()
+ma_forecast = ma_model.forecast(steps=6)
+
+print("\nMoving Average Forecast:")
+print(ma_forecast)
+_____________________________________________________________________________________________________________
+
+***************** ARIMA Time Series Forecasting**********************
+from statsmodels.tsa.arima.model import ARIMA
+
+# Using same df['Value'] as before
+
+# Fit ARIMA model (order p,d,q) = (2,1,2) as an example
+arima_model = ARIMA(df['Value'], order=(2, 1, 2))
+arima_result = arima_model.fit()
+
+# Forecast next 6 time points
+arima_forecast = arima_result.forecast(steps=6)
+
+# Plot original + forecast
+plt.figure(figsize=(8, 4))
+plt.plot(df['Value'], label='Original')
+plt.plot(range(len(df), len(df)+6), arima_forecast, label='Forecast', color='red')
+plt.title("ARIMA Forecast")
+plt.legend()
+plt.grid()
+plt.show()
+
+print("\nARIMA Forecasted Values:")
+print(arima_forecast)
